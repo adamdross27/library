@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 const Update = () => {
@@ -12,12 +12,14 @@ const Update = () => {
 
     const [file, setFile] = useState(null); // To store the uploaded image
     const [priceError, setPriceError] = useState(""); // For price validation error
+    const [titleError, setTitleError] = useState(""); // For title validation error
+    const [descError, setDescError] = useState(""); // For description validation error
     const location = useLocation();
     const navigate = useNavigate();
 
-    const bookId = (location.pathname.split("/")[2]);
+    const bookId = location.pathname.split("/")[2];
 
-    // Fetch the book data on component mount (for updating existing book)
+    // Fetch the book data on component mount
     useEffect(() => {
         const fetchBook = async () => {
             try {
@@ -46,7 +48,7 @@ const Update = () => {
         }
     };
 
-    // Handle file selection for the cover
+    // Handle file selection
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
@@ -76,13 +78,30 @@ const Update = () => {
     const handleClick = async (e) => {
         e.preventDefault();
 
-        // Validate if price is valid before submitting
+        // Validate title and description
+        if (!book.title) {
+            setTitleError("Title is required.");
+            return;
+        } else {
+            setTitleError(""); // Clear title error if valid
+        }
+
+        if (!book.desc) {
+            setDescError("Description is required.");
+            return;
+        } else {
+            setDescError(""); // Clear description error if valid
+        }
+
+        // Validate price
         if (priceError || !book.price) {
             setPriceError("Please provide a valid price.");
             return;
         }
 
-        // If a file is selected, upload it to the server first
+        // Default cover image if no file is selected
+        const coverImage = file ? file.name : "/uploads/default-cover.jpg";
+
         if (file) {
             const formData = new FormData();
             formData.append('file', file);
@@ -97,17 +116,16 @@ const Update = () => {
                 // Assuming the file upload returns a file path or URL
                 const fileUrl = fileUploadResponse.data.filePath;
 
-                // Now, submit the book data with the image URL
+                // Submit updated book data with the new image URL
                 await axios.put(`http://localhost:8800/books/${bookId}`, { ...book, cover: fileUrl });
                 navigate("/");
-
             } catch (e) {
                 console.log(e);
             }
         } else {
-            // If no file selected, submit without cover
+            // Submit updated book data without a new file
             try {
-                await axios.put(`http://localhost:8800/books/${bookId}`, book);
+                await axios.put(`http://localhost:8800/books/${bookId}`, { ...book, cover: coverImage });
                 navigate("/");
             } catch (e) {
                 console.log(e);
@@ -118,6 +136,8 @@ const Update = () => {
     return (
         <div className='form'>
             <h1>Update Book</h1>
+            
+            {/* Title Input with Error Handling */}
             <input
                 type="text"
                 placeholder='title'
@@ -125,6 +145,9 @@ const Update = () => {
                 value={book.title}
                 onChange={handleChange}
             />
+            {titleError && <p style={{ color: "red" }}>{titleError}</p>}
+
+            {/* Description Input with Error Handling */}
             <input
                 type="text"
                 placeholder='desc'
@@ -132,7 +155,8 @@ const Update = () => {
                 value={book.desc}
                 onChange={handleChange}
             />
-            
+            {descError && <p style={{ color: "red" }}>{descError}</p>}
+
             {/* Price Input with Error Handling */}
             <input
                 type="text"
@@ -141,7 +165,7 @@ const Update = () => {
                 value={book.price}
                 onChange={handleChange}
             />
-            {priceError && <p style={{ color: "red" }}>{priceError}</p>} {/* Display price error */}
+            {priceError && <p style={{ color: "red" }}>{priceError}</p>}
 
             {/* File Upload Section */}
             <div
@@ -158,7 +182,7 @@ const Update = () => {
                 <input type="file" accept="image/*" onChange={handleFileChange} />
                 <p>Select a Cover Image!</p>
 
-                {file && <p>Selected File: {file.name}</p>} {/* Show the selected file name */}
+                {file && <p>Selected File: {file.name}</p>}
             </div>
 
             <button className="formButton" onClick={handleClick}>Update</button>
