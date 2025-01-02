@@ -1,49 +1,172 @@
 import axios from 'axios';
-import React, { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router';
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router';
 
 const Update = () => {
     const [book, setBook] = useState({
-        title:"",
-        desc:"",
-        price:null,
-        cover:"",
+        title: "",
+        desc: "",
+        price: null,
+        cover: "",
     });
 
+    const [file, setFile] = useState(null); // To store the uploaded image
+    const [priceError, setPriceError] = useState(""); // For price validation error
     const location = useLocation();
     const navigate = useNavigate();
 
-    const bookId = (location.pathname.split("/")[2])
+    const bookId = (location.pathname.split("/")[2]);
 
+    // Fetch the book data on component mount (for updating existing book)
+    useEffect(() => {
+        const fetchBook = async () => {
+            try {
+                const response = await axios.get(`http://localhost:8800/books/${bookId}`);
+                setBook(response.data);
+            } catch (e) {
+                console.log(e);
+            }
+        };
+
+        fetchBook();
+    }, [bookId]);
+
+    // Handle form input changes
     const handleChange = (e) => {
-        setBook((prev) => ({...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setBook((prev) => ({ ...prev, [name]: value }));
+
+        // Validate price if it's the price field
+        if (name === "price") {
+            if (isNaN(value) || value <= 0) {
+                setPriceError("Price must be a valid positive number");
+            } else {
+                setPriceError(""); // Clear error if valid
+            }
+        }
     };
 
-    const handleClick = async e => {
-        e.preventDefault()
-        try {
-            await axios.put("http://localhost:8800/books/"+bookId, book)
-            navigate("/");
-        } catch (e)
-        {
-            console.log(e);
+    // Handle file selection for the cover
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+            setBook((prev) => ({ ...prev, cover: selectedFile.name })); // Update cover field
         }
-    }
+    };
 
-    console.log(book)
+    // Handle drag-and-drop file upload
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
 
-  return (
-    <div className='form'>
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-        <h1>Update Book</h1>
-        <input type="text" placeholder='title' name="title" onChange={handleChange} />
-        <input type="text" placeholder='desc' name='desc' onChange={handleChange}/>
-        <input type="text" placeholder='price' name='price' onChange={handleChange}/>
-        <input type="text" placeholder='cover' name='cover' onChange={handleChange}/>
+        const selectedFile = e.dataTransfer.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+            setBook((prev) => ({ ...prev, cover: selectedFile.name })); // Update cover field
+        }
+    };
 
-        <button className="formButton" onClick={handleClick}>Update</button>
-    </div>
-  )
+    // Handle form submission
+    const handleClick = async (e) => {
+        e.preventDefault();
+
+        // Validate if price is valid before submitting
+        if (priceError || !book.price) {
+            setPriceError("Please provide a valid price.");
+            return;
+        }
+
+        // If a file is selected, upload it to the server first
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const fileUploadResponse = await axios.post("http://localhost:8800/upload", formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                // Assuming the file upload returns a file path or URL
+                const fileUrl = fileUploadResponse.data.filePath;
+
+                // Now, submit the book data with the image URL
+                await axios.put(`http://localhost:8800/books/${bookId}`, { ...book, cover: fileUrl });
+                navigate("/");
+
+            } catch (e) {
+                console.log(e);
+            }
+        } else {
+            // If no file selected, submit without cover
+            try {
+                await axios.put(`http://localhost:8800/books/${bookId}`, book);
+                navigate("/");
+            } catch (e) {
+                console.log(e);
+            }
+        }
+    };
+
+    return (
+        <div className='form'>
+            <h1>Update Book</h1>
+            <input
+                type="text"
+                placeholder='title'
+                name="title"
+                value={book.title}
+                onChange={handleChange}
+            />
+            <input
+                type="text"
+                placeholder='desc'
+                name='desc'
+                value={book.desc}
+                onChange={handleChange}
+            />
+            
+            {/* Price Input with Error Handling */}
+            <input
+                type="text"
+                placeholder='price'
+                name='price'
+                value={book.price}
+                onChange={handleChange}
+            />
+            {priceError && <p style={{ color: "red" }}>{priceError}</p>} {/* Display price error */}
+
+            {/* File Upload Section */}
+            <div
+                className='file-upload'
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                style={{
+                    border: '2px dashed #ccc',
+                    padding: '20px',
+                    textAlign: 'center',
+                    margin: '10px 0',
+                }}
+            >
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+                <p>Select a Cover Image!</p>
+
+                {file && <p>Selected File: {file.name}</p>} {/* Show the selected file name */}
+            </div>
+
+            <button className="formButton" onClick={handleClick}>Update</button>
+            <Link to={`/`}>
+                <button className="return">Return</button>
+            </Link>
+        </div>
+    );
 }
 
-export default Update
+export default Update;

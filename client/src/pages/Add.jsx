@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 const Add = () => {
     const [book, setBook] = useState({
@@ -12,6 +12,8 @@ const Add = () => {
 
     const [file, setFile] = useState(null); // For storing the uploaded image file
     const [priceError, setPriceError] = useState(""); // For price validation error
+    const [titleError, setTitleError] = useState(""); // For title validation error
+    const [descError, setDescError] = useState(""); // For description validation error
     const navigate = useNavigate();
 
     // Handle form input changes
@@ -58,52 +60,88 @@ const Add = () => {
     // Handle form submission
     const handleClick = async (e) => {
         e.preventDefault();
-
+    
+        // Validate if title and desc are provided
+        if (!book.title) {
+            setTitleError("Title is required.");
+            return;
+        } else {
+            setTitleError(""); // Clear title error if valid
+        }
+    
+        if (!book.desc) {
+            setDescError("Description is required.");
+            return;
+        } else {
+            setDescError(""); // Clear description error if valid
+        }
+    
         // Validate if price is valid before submitting
         if (priceError || !book.price) {
             setPriceError("Please provide a valid price.");
             return;
         }
-
+    
+        // Set default cover image if no file is selected
+        const coverImage = file ? file.name : "/uploads/default-cover.jpg";  // Use relative URL
+    
         // If a file is selected, upload it to the server first
         if (file) {
             const formData = new FormData();
             formData.append('file', file);
-
+    
             try {
                 const fileUploadResponse = await axios.post("http://localhost:8800/upload", formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
                 });
-
+    
                 // Assuming the file upload returns a file path or URL
                 const fileUrl = fileUploadResponse.data.filePath;
-
+    
                 // Now, submit the book data with the image URL
                 await axios.post("http://localhost:8800/books", { ...book, cover: fileUrl });
                 navigate("/");
-
+    
             } catch (e) {
                 console.log(e);
             }
         } else {
-            // If no file selected, submit without cover
+            // If no file selected, submit without cover (use default cover image)
             try {
-                await axios.post("http://localhost:8800/books", book);
+                await axios.post("http://localhost:8800/books", { ...book, cover: coverImage });
                 navigate("/");
             } catch (e) {
                 console.log(e);
             }
         }
     }
-
+    
     return (
         <div className='form'>
             <h1>Add New Book</h1>
-            <input type="text" placeholder='title' name="title" onChange={handleChange} />
-            <input type="text" placeholder='desc' name='desc' onChange={handleChange} />
-            
+
+            {/* Title Input with Error Handling */}
+            <input
+                type="text"
+                placeholder='title'
+                name="title"
+                value={book.title}
+                onChange={handleChange}
+            />
+            {titleError && <p style={{ color: "red" }}>{titleError}</p>}
+
+            {/* Description Input with Error Handling */}
+            <input
+                type="text"
+                placeholder='desc'
+                name='desc'
+                value={book.desc}
+                onChange={handleChange}
+            />
+            {descError && <p style={{ color: "red" }}>{descError}</p>}
+
             {/* Price Input with Error Handling */}
             <input
                 type="text"
@@ -133,8 +171,11 @@ const Add = () => {
             </div>
 
             <button onClick={handleClick}>Add</button>
+            <Link to={`/`}>
+                <button className="return">Return</button>
+            </Link>
         </div>
-    )
+    );
 }
 
 export default Add;
