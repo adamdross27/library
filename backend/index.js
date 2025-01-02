@@ -6,12 +6,20 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url'; 
-import { dirname } from 'path';  
+import { dirname } from 'path'; 
 
 // Load environment variables
 dotenv.config();
-
 const app = express();
+
+app.use(cors({
+    origin: 'https://library-frontend-ashen.vercel.app',  // Allow only your frontend's URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Allow these HTTP methods
+}));
+
+app.get("/", (req, res) => {
+    res.json("Hello, this is the backend");
+});
 
 // Set up MySQL connection
 const db = mysql.createConnection({
@@ -61,11 +69,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Routes
-
-app.get("/", (req, res) => {
-    res.json("Hello, this is the backend");
-});
-
 app.get("/books", (req, res) => {
     const q = "SELECT * FROM books";
     db.query(q, (err, data) => {
