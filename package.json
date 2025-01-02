@@ -1,8 +1,13 @@
 {
+  "homepage": "https://adamdross27.github.io/library",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "gh-pages": "^6.2.0"
   },
   "scripts": {
-    "start": "concurrently \"npm run start --prefix client\" \"npm run start --prefix backend\""
+    "start": "concurrently \"npm run start --prefix client\" \"npm run start --prefix backend\"",
+    "predeploy": "npm run build --prefix client",
+    "deploy": "gh-pages -d client/build",
+    "build": "npm run build --prefix client"
   }
 }
