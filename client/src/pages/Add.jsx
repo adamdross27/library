@@ -11,11 +11,22 @@ const Add = () => {
     });
 
     const [file, setFile] = useState(null); // For storing the uploaded image file
+    const [priceError, setPriceError] = useState(""); // For price validation error
     const navigate = useNavigate();
 
     // Handle form input changes
     const handleChange = (e) => {
-        setBook((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setBook((prev) => ({ ...prev, [name]: value }));
+
+        // Validate price if it's the price field
+        if (name === "price") {
+            if (isNaN(value) || value <= 0) {
+                setPriceError("Price must be a valid positive number");
+            } else {
+                setPriceError(""); // Clear error if valid
+            }
+        }
     };
 
     // Handle file selection
@@ -47,6 +58,12 @@ const Add = () => {
     // Handle form submission
     const handleClick = async (e) => {
         e.preventDefault();
+
+        // Validate if price is valid before submitting
+        if (priceError || !book.price) {
+            setPriceError("Please provide a valid price.");
+            return;
+        }
 
         // If a file is selected, upload it to the server first
         if (file) {
@@ -86,7 +103,16 @@ const Add = () => {
             <h1>Add New Book</h1>
             <input type="text" placeholder='title' name="title" onChange={handleChange} />
             <input type="text" placeholder='desc' name='desc' onChange={handleChange} />
-            <input type="text" placeholder='price' name='price' onChange={handleChange} />
+            
+            {/* Price Input with Error Handling */}
+            <input
+                type="text"
+                placeholder='price'
+                name='price'
+                value={book.price}
+                onChange={handleChange}
+            />
+            {priceError && <p style={{ color: "red" }}>{priceError}</p>} {/* Display price error */}
 
             {/* File Upload Section */}
             <div
