@@ -91,7 +91,7 @@ const Add = () => {
             formData.append('file', file);
     
             try {
-                const fileUploadResponse = await axios.post("http://localhost:8800/upload", formData, {
+                const fileUploadResponse = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/upload`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -101,7 +101,7 @@ const Add = () => {
                 const fileUrl = fileUploadResponse.data.filePath;
     
                 // Now, submit the book data with the image URL
-                await axios.post("http://localhost:8800/books", { ...book, cover: fileUrl });
+                await axios.post(`${process.env.REACT_APP_API_BASE_URL}/books`, { ...book, cover: fileUrl });
                 navigate("/");
     
             } catch (e) {
@@ -110,7 +110,7 @@ const Add = () => {
         } else {
             // If no file selected, submit without cover (use default cover image)
             try {
-                await axios.post("http://localhost:8800/books", { ...book, cover: coverImage });
+                await axios.post(`${process.env.REACT_APP_API_BASE_URL}/books`, { ...book, cover: coverImage });
                 navigate("/");
             } catch (e) {
                 console.log(e);

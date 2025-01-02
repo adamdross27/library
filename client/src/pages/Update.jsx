@@ -2,6 +2,9 @@ import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
+// Get the backend URL from environment variables
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8800";
+
 const Update = () => {
     const [book, setBook] = useState({
         title: "",
@@ -23,7 +26,7 @@ const Update = () => {
     useEffect(() => {
         const fetchBook = async () => {
             try {
-                const response = await axios.get(`http://localhost:8800/books/${bookId}`);
+                const response = await axios.get(`${API_BASE_URL}/books/${bookId}`);
                 setBook(response.data);
             } catch (e) {
                 console.log(e);
@@ -33,31 +36,27 @@ const Update = () => {
         fetchBook();
     }, [bookId]);
 
-    // Handle form input changes
     const handleChange = (e) => {
         const { name, value } = e.target;
         setBook((prev) => ({ ...prev, [name]: value }));
 
-        // Validate price if it's the price field
         if (name === "price") {
             if (isNaN(value) || value <= 0) {
                 setPriceError("Price must be a valid positive number");
             } else {
-                setPriceError(""); // Clear error if valid
+                setPriceError("");
             }
         }
     };
 
-    // Handle file selection
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
             setFile(selectedFile);
-            setBook((prev) => ({ ...prev, cover: selectedFile.name })); // Update cover field
+            setBook((prev) => ({ ...prev, cover: selectedFile.name }));
         }
     };
 
-    // Handle drag-and-drop file upload
     const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -70,36 +69,32 @@ const Update = () => {
         const selectedFile = e.dataTransfer.files[0];
         if (selectedFile) {
             setFile(selectedFile);
-            setBook((prev) => ({ ...prev, cover: selectedFile.name })); // Update cover field
+            setBook((prev) => ({ ...prev, cover: selectedFile.name }));
         }
     };
 
-    // Handle form submission
     const handleClick = async (e) => {
         e.preventDefault();
 
-        // Validate title and description
         if (!book.title) {
             setTitleError("Title is required.");
             return;
         } else {
-            setTitleError(""); // Clear title error if valid
+            setTitleError("");
         }
 
         if (!book.desc) {
             setDescError("Description is required.");
             return;
         } else {
-            setDescError(""); // Clear description error if valid
+            setDescError("");
         }
 
-        // Validate price
         if (priceError || !book.price) {
             setPriceError("Please provide a valid price.");
             return;
         }
 
-        // Default cover image if no file is selected
         const coverImage = file ? file.name : "/uploads/default-cover.jpg";
 
         if (file) {
@@ -107,25 +102,20 @@ const Update = () => {
             formData.append('file', file);
 
             try {
-                const fileUploadResponse = await axios.post("http://localhost:8800/upload", formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
+                const fileUploadResponse = await axios.post(`${API_BASE_URL}/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 });
 
-                // Assuming the file upload returns a file path or URL
                 const fileUrl = fileUploadResponse.data.filePath;
 
-                // Submit updated book data with the new image URL
-                await axios.put(`http://localhost:8800/books/${bookId}`, { ...book, cover: fileUrl });
+                await axios.put(`${API_BASE_URL}/books/${bookId}`, { ...book, cover: fileUrl });
                 navigate("/");
             } catch (e) {
                 console.log(e);
             }
         } else {
-            // Submit updated book data without a new file
             try {
-                await axios.put(`http://localhost:8800/books/${bookId}`, { ...book, cover: coverImage });
+                await axios.put(`${API_BASE_URL}/books/${bookId}`, { ...book, cover: coverImage });
                 navigate("/");
             } catch (e) {
                 console.log(e);
@@ -136,8 +126,7 @@ const Update = () => {
     return (
         <div className='form'>
             <h1>Update Book</h1>
-            
-            {/* Title Input with Error Handling */}
+
             <input
                 type="text"
                 placeholder='title'
@@ -147,7 +136,6 @@ const Update = () => {
             />
             {titleError && <p style={{ color: "red" }}>{titleError}</p>}
 
-            {/* Description Input with Error Handling */}
             <input
                 type="text"
                 placeholder='desc'
@@ -157,7 +145,6 @@ const Update = () => {
             />
             {descError && <p style={{ color: "red" }}>{descError}</p>}
 
-            {/* Price Input with Error Handling */}
             <input
                 type="text"
                 placeholder='price'
@@ -167,7 +154,6 @@ const Update = () => {
             />
             {priceError && <p style={{ color: "red" }}>{priceError}</p>}
 
-            {/* File Upload Section */}
             <div
                 className='file-upload'
                 onDragOver={handleDragOver}
@@ -181,7 +167,6 @@ const Update = () => {
             >
                 <input type="file" accept="image/*" onChange={handleFileChange} />
                 <p>Select a Cover Image!</p>
-
                 {file && <p>Selected File: {file.name}</p>}
             </div>
 
@@ -191,6 +176,6 @@ const Update = () => {
             </Link>
         </div>
     );
-}
+};
 
 export default Update;
